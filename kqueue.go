@@ -121,6 +121,7 @@ func (w *Watcher) Remove(name string) error {
 	delete(w.watches, name)
 	delete(w.paths, watchfd)
 	delete(w.dirFlags, name)
+	delete(w.fileExists, name)
 	w.mu.Unlock()
 
 	// Find all watched paths that are in this directory that are not external.
@@ -233,6 +234,7 @@ func (w *Watcher) addWatch(name string, flags uint32) (string, error) {
 		w.mu.Lock()
 		w.watches[name] = watchfd
 		w.paths[watchfd] = pathInfo{name: name, isDir: isDir}
+		w.fileExists[name] = true
 		w.mu.Unlock()
 	}
 
@@ -396,10 +398,6 @@ func (w *Watcher) watchDirectoryFiles(dirPath string) error {
 
 	for _, fileInfo := range files {
 		filePath := filepath.Join(dirPath, fileInfo.Name())
-		filePath, err = w.internalWatch(filePath, fileInfo)
-		if err != nil {
-			return err
-		}
 
 		w.mu.Lock()
 		w.fileExists[filePath] = true
