@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1233,5 +1234,28 @@ func testRename(file1, file2 string) error {
 	default:
 		cmd := exec.Command("mv", file1, file2)
 		return cmd.Run()
+	}
+}
+
+func TestWatchAFolderWith20000FilesAndThenWatchAnotherFolderShouldNotReturnAnError(t *testing.T) {
+	tmpDir := tempMkdir(t)
+	defer os.RemoveAll(tmpDir)
+	for i := 0; i < 20000; i++ {
+		file, err := os.Create(path.Join(tmpDir, strconv.Itoa(i)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		file.Close()
+	}
+	tmpDir2 := tempMkdir(t)
+	defer os.RemoveAll(tmpDir2)
+	watcher := newWatcher(t)
+	err := watcher.Add(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = watcher.Add(tmpDir2)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
